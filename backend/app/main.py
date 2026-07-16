@@ -9,7 +9,7 @@ app = FastAPI(title="Hackathon Commander AI", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.CORS_ORIGIN, "https://hackathon-f3i74ajx0-vishmay-1595s-projects.vercel.app"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
