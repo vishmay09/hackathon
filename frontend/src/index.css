@@ -1,0 +1,40 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #F7F9FF;
+}
+
+html, body, #root { height: 100%; }
+
+body {
+  font-family: Inter, system-ui, sans-serif;
+  background: var(--bg);
+  color: #0A0F1F;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dark body { background: #06080F; color: #EEF0F5; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(69,110,254,0.25); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(69,110,254,0.45); }
+
+.glass {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(69,110,254,0.08);
+}
+.dark .glass {
+  background: rgba(17,24,48,0.6);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg,#456EFE,#6E8CFE);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
