@@ -19,8 +19,8 @@ const NAV = [
   { to: "/tools",     label: "Tools",        icon: Wrench },
   { to: "/history",   label: "History",         icon: History },
   // { to: "/templates", label: "Templates",       icon: Layers },
-  { to: "/settings",  label: "Settings",        icon: Settings },
-  { to: "/help",      label: "Help",            icon: HelpCircle },
+  // { to: "/settings",  label: "Settings",        icon: Settings },
+  // { to: "/help",      label: "Help",            icon: HelpCircle },
 ];
 
 export default function Sidebar() {
