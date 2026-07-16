@@ -4,11 +4,8 @@ import {
 } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useDropzone } from "react-dropzone";
 import {
   Sparkles,
-  Upload,
-  Mic,
   X,
   Server,
   Smartphone,
@@ -24,11 +21,9 @@ import {
 } from "../components/ui/Card";
 import {
   generateStrategy,
-  uploadFile,
   previewStrategy,
 } from "../services/api";
 import { useHistory } from "../contexts/HistoryContext";
-import { createHistoryId } from "../lib/historyDb";
 import ThinkingModal from "../components/strategy/ThinkingModal";
 import clsx from "clsx";
 
@@ -100,72 +95,10 @@ export default function NewStrategy() {
   const [notes, setNotes] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [uploadingFile, setUploadingFile] =
-    useState(false);
   const [previewLoading, setPreviewLoading] =
     useState(false);
   const [preview, setPreview] =
     useState<PreviewData | null>(null);
-
-  /* ─────────────── File Upload ─────────────── */
-
-  const {
-    getRootProps,
-    getInputProps,
-    isDragActive,
-    open: openFilePicker,
-  } = useDropzone({
-    accept: {
-      "text/plain": [".txt"],
-      "application/pdf": [".pdf"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [".docx"],
-    },
-    multiple: false,
-    noClick: true,
-    noKeyboard: true,
-
-    onDrop: async (acceptedFiles) => {
-      const file = acceptedFiles[0];
-
-      if (!file) return;
-
-      try {
-        setUploadingFile(true);
-
-        const text = await uploadFile(file);
-
-        setStatement((current) => {
-          const uploadedText = String(text).trim();
-
-          if (!uploadedText) {
-            return current;
-          }
-
-          return current
-            ? `${current}\n\n${uploadedText}`
-            : uploadedText;
-        });
-      } catch (error) {
-        console.error("File upload failed:", error);
-
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Unknown upload error";
-
-        window.alert(`File upload failed: ${message}`);
-      } finally {
-        setUploadingFile(false);
-      }
-    },
-
-    onDropRejected: () => {
-      window.alert(
-        "Please upload a valid PDF, DOCX, or TXT file."
-      );
-    },
-  });
 
   /* ─────────────── Team Roles ─────────────── */
 
@@ -177,6 +110,8 @@ export default function NewStrategy() {
           )
         : [...currentRoles, role]
     );
+
+    setPreview(null);
   };
 
   const canGenerate =
@@ -213,7 +148,7 @@ export default function NewStrategy() {
     }
   };
 
-  /* ─────────────── Generate and Save ─────────────── */
+  /* ─────────────── Generate and Cloud Save ─────────────── */
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
@@ -233,20 +168,19 @@ export default function NewStrategy() {
       };
 
       /*
-       * First generate the strategy from the backend.
+       * Generate the strategy from the FastAPI backend.
        */
       const strategy = await generateStrategy(request);
 
       /*
-       * Create a unique ID for the strategy.
+       * Generate an ID for the cloud history record.
        */
-      const id = createHistoryId();
+      const id = crypto.randomUUID();
 
       /*
-       * Save to IndexedDB through HistoryContext.
-       *
-       * Awaiting add() ensures the strategy is stored
-       * before navigating to the result page.
+       * Save through HistoryContext.
+       * HistoryContext should send this data to your
+       * cloud database through the backend.
        */
       await add({
         id,
@@ -259,12 +193,12 @@ export default function NewStrategy() {
       });
 
       /*
-       * Only navigate after IndexedDB saving succeeds.
+       * Open the result only after cloud saving succeeds.
        */
       navigate(`/result/${id}`);
     } catch (error) {
       console.error(
-        "Strategy generation or saving failed:",
+        "Strategy generation or cloud saving failed:",
         error
       );
 
@@ -274,62 +208,28 @@ export default function NewStrategy() {
           : "Unknown error";
 
       window.alert(
-        `Generation or saving failed: ${message}`
+        `Generation or cloud saving failed: ${message}`
       );
     } finally {
       setLoading(false);
     }
   };
 
-  /* ─────────────── Voice Input ─────────────── */
+  /* ─────────────── Clear Statement ─────────────── */
 
-  const voiceInput = () => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+  const clearStatement = () => {
+    setStatement("");
+    setPreview(null);
+  };
 
-    if (!SpeechRecognition) {
-      window.alert(
-        "Voice input is not supported in this browser."
-      );
-      return;
-    }
+  /* ─────────────── Example Statement ─────────────── */
 
-    const recognition = new SpeechRecognition();
+  const useExample = () => {
+    setStatement(
+      "Design an AI-powered mental wellness companion for college students that reduces anxiety through personalized micro-interventions and connects users with peer support anonymously."
+    );
 
-    recognition.lang = "en-US";
-    recognition.continuous = false;
-    recognition.interimResults = false;
-
-    recognition.onresult = (event: any) => {
-      const transcript =
-        event.results?.[0]?.[0]?.transcript;
-
-      if (!transcript) return;
-
-      setStatement((current) =>
-        current.trim()
-          ? `${current.trim()} ${transcript}`
-          : transcript
-      );
-    };
-
-    recognition.onerror = (event: any) => {
-      console.error(
-        "Speech recognition failed:",
-        event
-      );
-
-      if (event.error !== "no-speech") {
-        window.alert(
-          `Voice input failed: ${
-            event.error || "Unknown error"
-          }`
-        );
-      }
-    };
-
-    recognition.start();
+    setPreview(null);
   };
 
   return (
@@ -372,77 +272,27 @@ export default function NewStrategy() {
               </div>
             </div>
 
-            <div
-              {...getRootProps()}
-              className={clsx(
-                "relative rounded-xl border-2 border-dashed transition p-1",
-                isDragActive
-                  ? "border-primary-500 bg-primary-50"
-                  : "border-transparent"
-              )}
-            >
-              <input {...getInputProps()} />
-
+            <div className="relative rounded-xl border border-primary-500/10 transition focus-within:border-primary-500/30 focus-within:ring-2 focus-within:ring-primary-500/10">
               <textarea
                 value={statement}
-                onChange={(event) =>
-                  setStatement(event.target.value)
-                }
+                onChange={(event) => {
+                  setStatement(event.target.value);
+                  setPreview(null);
+                }}
                 onBlur={() => {
                   void doPreview();
                 }}
-                placeholder="Paste your hackathon problem statement here. e.g. 'Design an AI-powered platform that helps rural farmers predict crop yield…'"
+                placeholder="Paste your hackathon problem statement here. For example: Design an AI-powered platform that helps rural farmers predict crop yield…"
                 className="w-full min-h-[220px] p-4 bg-transparent resize-none focus:outline-none text-[15px] leading-relaxed"
               />
-
-              {isDragActive && (
-                <div className="absolute inset-0 rounded-xl bg-primary-50/90 flex items-center justify-center pointer-events-none">
-                  <div className="text-center">
-                    <Upload className="w-8 h-8 text-primary-500 mx-auto" />
-
-                    <p className="mt-2 text-sm font-semibold text-primary-600">
-                      Drop your file here
-                    </p>
-
-                    <p className="text-xs text-primary-400 mt-1">
-                      PDF, DOCX, or TXT
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mt-3">
-              <button
-                type="button"
-                onClick={openFilePicker}
-                disabled={uploadingFile}
-                className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Upload className="w-3.5 h-3.5" />
-
-                {uploadingFile
-                  ? "Uploading..."
-                  : "Upload PDF / DOCX / TXT"}
-              </button>
-
-              <button
-                type="button"
-                onClick={voiceInput}
-                className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100"
-              >
-                <Mic className="w-3.5 h-3.5" />
-                Voice
-              </button>
-
               {statement && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setStatement("");
-                    setPreview(null);
-                  }}
-                  className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg text-ink-500 hover:bg-ink-100/50"
+                  onClick={clearStatement}
+                  className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg text-ink-500 hover:bg-ink-100/50 transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                   Clear
@@ -451,13 +301,8 @@ export default function NewStrategy() {
 
               <button
                 type="button"
-                onClick={() => {
-                  setStatement(
-                    "Design an AI-powered mental wellness companion for college students that reduces anxiety through personalized micro-interventions and connects users with peer support anonymously."
-                  );
-                  setPreview(null);
-                }}
-                className="text-xs px-3 py-2 rounded-lg text-primary-500 hover:underline"
+                onClick={useExample}
+                className="text-xs px-3 py-2 rounded-lg text-primary-500 hover:bg-primary-50 transition-colors"
               >
                 Use example
               </button>

@@ -78,7 +78,7 @@ export default function Result() {
             </span>
           </div>
         </div>
-        <ExportMenu strategy={s} title={item.title} />
+        
       </div>
 
       {/* Scores */}
