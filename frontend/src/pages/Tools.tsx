@@ -120,7 +120,7 @@ const TOOLS: Tool[] = [
   { name: "Activepieces", url: "https://www.activepieces.com/", cat: "automation", free: true },
   { name: "Windmill", url: "https://www.windmill.dev/", cat: "automation", free: true },
   { name: "Node-RED", url: "https://nodered.org/", cat: "automation", free: true },
-  { name: "Paperclip", url: "https://paperclip.ing/", cat: "automation" }, // NEW
+  { name: "Paperclip", url: "https://paperclip.ing/", cat: "automation" }, 
 
   // Directories / All-in-One
   { name: "TAAFT", url: "https://theresanaiforthat.com/", cat: "directory", free: true },
@@ -162,8 +162,8 @@ const TOOLS: Tool[] = [
   { name: "CodeShare", url: "https://codeshare.io/", cat: "dev", free: true },
   { name: "Emailnator", url: "https://www.emailnator.com/", cat: "dev", free: true },
   { name: "SmailPro", url: "https://smailpro.com/temporary-email", cat: "dev", free: true },
-  { name: "React Bits", url: "https://reactbits.dev/", cat: "dev", free: true }, // NEW
-  { name: "Emergent", url: "https://app.emergent.sh/", cat: "dev" }, // NEW (Cleaned URL)
+  { name: "React Bits", url: "https://reactbits.dev/", cat: "dev", free: true }, 
+  { name: "Emergent", url: "https://app.emergent.sh/", cat: "dev" }, 
 
   // Design
   { name: "Logopony", url: "https://www.logopony.com/", cat: "design" },
@@ -172,10 +172,10 @@ const TOOLS: Tool[] = [
   { name: "Shader Playground", url: "https://robert.leitl.dev/artifacts/shader-playground/#/1", cat: "design", free: true },
   { name: "Gapsy Studio", url: "https://gapsystudio.com/", cat: "design" },
   { name: "Lanoi", url: "https://lanoi.webflow.io/", cat: "design", free: true },
-  { name: "AutoAE", url: "https://autoae.online/", cat: "design" }, // NEW
-  { name: "Animos", url: "https://animos.app/", cat: "design" }, // NEW
-  { name: "Reve", url: "https://app.reve.com/", cat: "design" }, // NEW
-  { name: "Rive", url: "https://rive.app/", cat: "design", free: true }, // NEW
+  { name: "AutoAE", url: "https://autoae.online/", cat: "design" }, 
+  { name: "Animos", url: "https://animos.app/", cat: "design" }, 
+  { name: "Reve", url: "https://app.reve.com/", cat: "design" }, 
+  { name: "Rive", url: "https://rive.app/", cat: "design", free: true }, 
 
   // GPU & Compute
   { name: "RunPod", url: "https://www.runpod.io/", cat: "gpu" },
@@ -239,11 +239,20 @@ export default function Tools() {
   const [activeCat, setActiveCat] = useState<string>("all");
   const [freeOnly, setFreeOnly] = useState(false);
 
+  // FIX 1: Make category counts depend on the `freeOnly` state
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    TOOLS.forEach((t) => (c[t.cat] = (c[t.cat] || 0) + 1));
+    TOOLS.forEach((t) => {
+      if (freeOnly && !t.free) return; // Skip non-free tools if filter is active
+      c[t.cat] = (c[t.cat] || 0) + 1;
+    });
     return c;
-  }, []);
+  }, [freeOnly]);
+
+  // FIX 2: Calculate the total count dynamically based on `freeOnly`
+  const totalTools = useMemo(() => {
+    return freeOnly ? TOOLS.filter((t) => t.free).length : TOOLS.length;
+  }, [freeOnly]);
 
   const filtered = useMemo(() => {
     return TOOLS.filter((t) => {
@@ -268,7 +277,8 @@ export default function Tools() {
             AI Tools <span className="gradient-text">Arsenal</span>
           </h1>
           <p className="text-ink-500 mt-2">
-            {TOOLS.length}+ curated tools for hackathons — click any card to open.
+            {/* FIX 3: Use the dynamic totalTools count here */}
+            {totalTools}+ curated tools for hackathons — click any card to open.
           </p>
         </motion.div>
 
@@ -301,7 +311,7 @@ export default function Tools() {
           <CatChip
             active={activeCat === "all"}
             onClick={() => setActiveCat("all")}
-            label={`All (${TOOLS.length})`}
+            label={`All (${totalTools})`} // FIX 3: Use dynamic total here too
           />
           {CATEGORIES.map((c) => (
             <CatChip
