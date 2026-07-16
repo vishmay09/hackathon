@@ -19,12 +19,7 @@ export default function TopBar() {
       </div>
 
      
-      <button
-        onClick={() => setDark((d) => !d)}
-        className="p-2 rounded-lg hover:bg-primary-50 dark:hover:bg-ink-700 text-ink-500"
-      >
-        {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-      </button>
+      
     </header>
   );
 }
