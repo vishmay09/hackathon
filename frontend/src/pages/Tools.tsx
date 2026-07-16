@@ -120,6 +120,7 @@ const TOOLS: Tool[] = [
   { name: "Activepieces", url: "https://www.activepieces.com/", cat: "automation", free: true },
   { name: "Windmill", url: "https://www.windmill.dev/", cat: "automation", free: true },
   { name: "Node-RED", url: "https://nodered.org/", cat: "automation", free: true },
+  { name: "Paperclip", url: "https://paperclip.ing/", cat: "automation" }, // NEW
 
   // Directories / All-in-One
   { name: "TAAFT", url: "https://theresanaiforthat.com/", cat: "directory", free: true },
@@ -161,6 +162,8 @@ const TOOLS: Tool[] = [
   { name: "CodeShare", url: "https://codeshare.io/", cat: "dev", free: true },
   { name: "Emailnator", url: "https://www.emailnator.com/", cat: "dev", free: true },
   { name: "SmailPro", url: "https://smailpro.com/temporary-email", cat: "dev", free: true },
+  { name: "React Bits", url: "https://reactbits.dev/", cat: "dev", free: true }, // NEW
+  { name: "Emergent", url: "https://app.emergent.sh/", cat: "dev" }, // NEW (Cleaned URL)
 
   // Design
   { name: "Logopony", url: "https://www.logopony.com/", cat: "design" },
@@ -169,6 +172,10 @@ const TOOLS: Tool[] = [
   { name: "Shader Playground", url: "https://robert.leitl.dev/artifacts/shader-playground/#/1", cat: "design", free: true },
   { name: "Gapsy Studio", url: "https://gapsystudio.com/", cat: "design" },
   { name: "Lanoi", url: "https://lanoi.webflow.io/", cat: "design", free: true },
+  { name: "AutoAE", url: "https://autoae.online/", cat: "design" }, // NEW
+  { name: "Animos", url: "https://animos.app/", cat: "design" }, // NEW
+  { name: "Reve", url: "https://app.reve.com/", cat: "design" }, // NEW
+  { name: "Rive", url: "https://rive.app/", cat: "design", free: true }, // NEW
 
   // GPU & Compute
   { name: "RunPod", url: "https://www.runpod.io/", cat: "gpu" },
