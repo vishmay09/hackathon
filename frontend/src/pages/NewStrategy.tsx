@@ -12,6 +12,9 @@ import {
   Bug,
   Palette,
   Brain,
+  Code2,
+  Plus,
+  UserRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -33,6 +36,7 @@ type Role = {
   id: string;
   icon: LucideIcon;
   color: string;
+  custom?: boolean;
 };
 
 type PreviewData = {
@@ -43,13 +47,23 @@ type PreviewData = {
   winning_potential?: number;
 };
 
-/* ─────────────── Roles ─────────────── */
+/* ─────────────── Suggested Roles ─────────────── */
 
 const ROLES: Role[] = [
+  {
+    id: "iOS Developer",
+    icon: Smartphone,
+    color: "from-slate-600 to-blue-500",
+  },
   {
     id: "AI/ML Developer",
     icon: Brain,
     color: "from-purple-500 to-indigo-500",
+  },
+  {
+    id: "Frontend Developer",
+    icon: Code2,
+    color: "from-blue-500 to-cyan-500",
   },
   {
     id: "Backend Developer",
@@ -86,6 +100,15 @@ export default function NewStrategy() {
 
   const [statement, setStatement] = useState("");
   const [roles, setRoles] = useState<string[]>([]);
+
+  const [customRoles, setCustomRoles] = useState<
+    string[]
+  >([]);
+  const [customRoleInput, setCustomRoleInput] =
+    useState("");
+  const [customRoleMessage, setCustomRoleMessage] =
+    useState("");
+
   const [duration, setDuration] = useState(24);
   const [constraints, setConstraints] = useState("");
   const [technologies, setTechnologies] =
@@ -100,6 +123,20 @@ export default function NewStrategy() {
   const [preview, setPreview] =
     useState<PreviewData | null>(null);
 
+  /*
+   * Combine suggested roles with roles created by
+   * the user.
+   */
+  const availableRoles: Role[] = [
+    ...ROLES,
+    ...customRoles.map((role) => ({
+      id: role,
+      icon: UserRound,
+      color: "from-violet-500 to-fuchsia-500",
+      custom: true,
+    })),
+  ];
+
   /* ─────────────── Team Roles ─────────────── */
 
   const toggleRole = (role: string) => {
@@ -111,6 +148,96 @@ export default function NewStrategy() {
         : [...currentRoles, role]
     );
 
+    setPreview(null);
+  };
+
+  const addCustomRole = () => {
+    const roleName = customRoleInput
+      .replace(/\s+/g, " ")
+      .trim();
+
+    setCustomRoleMessage("");
+
+    if (roleName.length < 2) {
+      setCustomRoleMessage(
+        "Enter a valid position name."
+      );
+      return;
+    }
+
+    if (roleName.length > 60) {
+      setCustomRoleMessage(
+        "Position name must be under 60 characters."
+      );
+      return;
+    }
+
+    /*
+     * Check suggested and custom roles to prevent
+     * duplicate positions.
+     */
+    const existingRole = [
+      ...ROLES.map((role) => role.id),
+      ...customRoles,
+    ].find(
+      (role) =>
+        role.toLowerCase() === roleName.toLowerCase()
+    );
+
+    /*
+     * If the role already exists, simply select it.
+     */
+    if (existingRole) {
+      setRoles((currentRoles) =>
+        currentRoles.includes(existingRole)
+          ? currentRoles
+          : [...currentRoles, existingRole]
+      );
+
+      setCustomRoleInput("");
+      setCustomRoleMessage(
+        `${existingRole} already exists and has been selected.`
+      );
+      setPreview(null);
+
+      return;
+    }
+
+    /*
+     * Add the custom position and automatically
+     * select it.
+     */
+    setCustomRoles((currentRoles) => [
+      ...currentRoles,
+      roleName,
+    ]);
+
+    setRoles((currentRoles) => [
+      ...currentRoles,
+      roleName,
+    ]);
+
+    setCustomRoleInput("");
+    setCustomRoleMessage(
+      `${roleName} was added and selected.`
+    );
+    setPreview(null);
+  };
+
+  const removeCustomRole = (role: string) => {
+    setCustomRoles((currentRoles) =>
+      currentRoles.filter(
+        (currentRole) => currentRole !== role
+      )
+    );
+
+    setRoles((currentRoles) =>
+      currentRoles.filter(
+        (currentRole) => currentRole !== role
+      )
+    );
+
+    setCustomRoleMessage("");
     setPreview(null);
   };
 
@@ -168,19 +295,24 @@ export default function NewStrategy() {
       };
 
       /*
-       * Generate the strategy from the FastAPI backend.
+       * Generate the strategy from the FastAPI
+       * backend.
        */
       const strategy = await generateStrategy(request);
 
       /*
-       * Generate an ID for the cloud history record.
+       * Create a unique cloud history record ID.
        */
-      const id = crypto.randomUUID();
+      const id =
+        typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random()
+              .toString(36)
+              .slice(2)}`;
 
       /*
-       * Save through HistoryContext.
-       * HistoryContext should send this data to your
-       * cloud database through the backend.
+       * Save the generated strategy through the
+       * cloud-enabled HistoryContext.
        */
       await add({
         id,
@@ -193,7 +325,7 @@ export default function NewStrategy() {
       });
 
       /*
-       * Open the result only after cloud saving succeeds.
+       * Navigate only after the cloud save succeeds.
        */
       navigate(`/result/${id}`);
     } catch (error) {
@@ -215,14 +347,12 @@ export default function NewStrategy() {
     }
   };
 
-  /* ─────────────── Clear Statement ─────────────── */
+  /* ─────────────── Statement Actions ─────────────── */
 
   const clearStatement = () => {
     setStatement("");
     setPreview(null);
   };
-
-  /* ─────────────── Example Statement ─────────────── */
 
   const useExample = () => {
     setStatement(
@@ -315,56 +445,104 @@ export default function NewStrategy() {
               Team Composition
             </SectionTitle>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {ROLES.map((role) => {
-                const active = roles.includes(role.id);
-                const RoleIcon = role.icon;
+            <p className="text-xs text-ink-500 mb-4">
+              Select suggested positions or add any
+              missing position required by your team.
+            </p>
 
-                return (
-                  <motion.button
-                    type="button"
-                    key={role.id}
-                    onClick={() =>
-                      toggleRole(role.id)
+            {/* Add Custom Position */}
+            <div className="mb-5">
+              <label
+                htmlFor="custom-role"
+                className="block text-[11px] uppercase tracking-wider text-ink-500 mb-1.5"
+              >
+                Add another position
+              </label>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  id="custom-role"
+                  type="text"
+                  value={customRoleInput}
+                  maxLength={60}
+                  onChange={(event) => {
+                    setCustomRoleInput(
+                      event.target.value
+                    );
+                    setCustomRoleMessage("");
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addCustomRole();
                     }
-                    whileTap={{ scale: 0.97 }}
-                    aria-pressed={active}
-                    className={clsx(
-                      "relative p-4 rounded-xl text-left border transition-all",
-                      active
-                        ? "border-primary-500 bg-primary-50 shadow-soft"
-                        : "border-primary-500/10 hover:border-primary-500/40"
-                    )}
-                  >
-                    <div
-                      className={clsx(
-                        "w-9 h-9 rounded-lg flex items-center justify-center mb-3 bg-gradient-to-br text-white",
-                        role.color
-                      )}
-                    >
-                      <RoleIcon className="w-4 h-4" />
-                    </div>
+                  }}
+                  placeholder="For example: DevOps Engineer"
+                  className="flex-1 px-3 py-2.5 bg-white border border-primary-500/10 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                />
 
-                    <div className="text-sm font-medium">
-                      {role.id}
-                    </div>
+                <button
+                  type="button"
+                  onClick={addCustomRole}
+                  disabled={
+                    customRoleInput.trim().length < 2
+                  }
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Position
+                </button>
+              </div>
 
-                    {active && (
-                      <motion.div
-                        layoutId="selected-role-check"
-                        className="absolute top-3 right-3 w-2 h-2 rounded-full bg-primary-500"
-                      />
-                    )}
-                  </motion.button>
-                );
-              })}
+              {customRoleMessage && (
+                <p className="text-xs text-primary-600 mt-2">
+                  {customRoleMessage}
+                </p>
+              )}
             </div>
 
+            {/* Role Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {availableRoles.map((role) => (
+                <RoleCard
+                  key={role.id}
+                  role={role}
+                  active={roles.includes(role.id)}
+                  onToggle={() =>
+                    toggleRole(role.id)
+                  }
+                  onRemove={
+                    role.custom
+                      ? () =>
+                          removeCustomRole(role.id)
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+
+            {/* Selected Positions */}
             {roles.length > 0 && (
-              <div className="mt-4 text-xs text-ink-500">
-                Selected {roles.length} role
-                {roles.length > 1 ? "s" : ""}:{" "}
-                {roles.join(" • ")}
+              <div className="mt-4 rounded-xl bg-primary-50/60 border border-primary-100 p-3">
+                <div className="text-xs text-ink-500">
+                  Selected {roles.length} position
+                  {roles.length > 1 ? "s" : ""}
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {roles.map((role) => (
+                    <button
+                      type="button"
+                      key={role}
+                      onClick={() => toggleRole(role)}
+                      title={`Remove ${role} from selection`}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white border border-primary-200 text-primary-700 hover:border-red-200 hover:text-red-500 transition-colors"
+                    >
+                      {role}
+                      <X className="w-3 h-3" />
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </Card>
@@ -490,7 +668,7 @@ export default function NewStrategy() {
           {!canGenerate && !loading && (
             <p className="text-center text-xs text-ink-400">
               Enter at least 20 characters and select
-              one or more team roles.
+              one or more team positions.
             </p>
           )}
         </div>
@@ -571,6 +749,77 @@ export default function NewStrategy() {
 
       <ThinkingModal open={loading} />
     </div>
+  );
+}
+
+/* ─────────────── Role Card ─────────────── */
+
+type RoleCardProps = {
+  role: Role;
+  active: boolean;
+  onToggle: () => void;
+  onRemove?: () => void;
+};
+
+function RoleCard({
+  role,
+  active,
+  onToggle,
+  onRemove,
+}: RoleCardProps) {
+  const RoleIcon = role.icon;
+
+  return (
+    <motion.div
+      whileTap={{ scale: 0.97 }}
+      className={clsx(
+        "relative rounded-xl border transition-all overflow-hidden",
+        active
+          ? "border-primary-500 bg-primary-50 shadow-soft"
+          : "border-primary-500/10 hover:border-primary-500/40"
+      )}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={active}
+        className="w-full p-4 text-left"
+      >
+        <div
+          className={clsx(
+            "w-9 h-9 rounded-lg flex items-center justify-center mb-3 bg-gradient-to-br text-white",
+            role.color
+          )}
+        >
+          <RoleIcon className="w-4 h-4" />
+        </div>
+
+        <div
+          className={clsx(
+            "text-sm font-medium",
+            role.custom && "pr-7"
+          )}
+        >
+          {role.id}
+        </div>
+
+        {active && (
+          <div className="absolute bottom-3 right-3 w-2 h-2 rounded-full bg-primary-500" />
+        )}
+      </button>
+
+      {onRemove && (
+        <button
+          type="button"
+          onClick={onRemove}
+          title={`Delete ${role.id}`}
+          aria-label={`Delete custom position ${role.id}`}
+          className="absolute top-2 right-2 z-10 w-7 h-7 rounded-lg flex items-center justify-center text-ink-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </motion.div>
   );
 }
 
